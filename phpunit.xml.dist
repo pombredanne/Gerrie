@@ -1,15 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<phpunit backupGlobals="false" colors="true" bootstrap="vendor/autoload.php">
-    <testsuites>
-        <testsuite name="Gerrie Test Suite">
-            <directory suffix="Test.php">./tests/Gerrie/</directory>
-        </testsuite>
-    </testsuites>
+<phpunit backupGlobals="false"
+         backupStaticAttributes="false"
+         colors="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         processIsolation="false"
+         stopOnFailure="false"
+         syntaxCheck="true"
+         bootstrap="vendor/autoload.php">
 
-    <filter>
-        <whitelist>
-            <directory suffix=".php">./src/Gerrie/</directory>
-        </whitelist>
-    </filter>
+<testsuites>
+    <testsuite name="Gerrie Test Suite">
+        <directory suffix="Test.php">./src/Gerrie/Tests/</directory>
+    </testsuite>
+</testsuites>
+
+<filter>
+    <whitelist>
+        <directory suffix=".php">./src/Gerrie/</directory>
+        <exclude>
+            <directory>./src/Gerrie/Tests</directory>
+        </exclude>
+    </whitelist>
+</filter>
 </phpunit>

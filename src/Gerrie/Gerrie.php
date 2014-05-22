@@ -25,7 +25,10 @@
  */
 namespace Gerrie;
 
+use Gerrie\Entities\ProjectInfo;
 use Gerrie\Helper\Database;
+use Gerrie\Hydrator\ProjectHydrator;
+use Gerrie\RemoteDataService\RemoteDataServiceInterface;
 
 class Gerrie
 {
@@ -56,7 +59,7 @@ class Gerrie
      *
      * @var \Gerrie\DataService\Base
      */
-    protected $dataService = null;
+    protected $remoteDataService = null;
 
     /**
      * Config array
@@ -128,10 +131,10 @@ class Gerrie
      * @param array $config The configuration array
      * @return void
      */
-    public function __construct(Database $database, \Gerrie\DataService\Base $dataService, array $config)
+    public function __construct(Database $database, RemoteDataServiceInterface $dataService, array $config)
     {
         $this->setDatabase($database);
-        $this->setDataService($dataService);
+        $this->setRemoteDataService($dataService);
         $this->setConfig($config);
     }
 
@@ -178,12 +181,12 @@ class Gerrie
     /**
      * Sets the data service
      *
-     * @param \Gerrie\DataService\Base $dataService Data service object
+     * @param RemoteDataServiceInterface $remoteDataService Data service object
      * @return void
      */
-    public function setDataService(\Gerrie\DataService\Base $dataService)
+    protected function setRemoteDataService(RemoteDataServiceInterface $remoteDataService)
     {
-        $this->dataService = $dataService;
+        $this->remoteDataService = $remoteDataService;
     }
 
     /**
@@ -191,9 +194,9 @@ class Gerrie
      *
      * @return \Gerrie\DataService\Base
      */
-    public function getDataService()
+    public function getRemoteDataService()
     {
-        return $this->dataService;
+        return $this->remoteDataService;
     }
 
     /**
@@ -420,13 +423,24 @@ class Gerrie
     {
         $this->outputHeadline('Proceed Projects');
 
-        $projects = $this->dataService->getProjects();
+        $projects = $this->remoteDataService->getProjects();
 
         if (is_array($projects) === false) {
             throw new \Exception('No projects found on "' . $host . '"!', 1363894633);
         }
 
-        $this->importProjects($projects);
+        $projectHydrator = new ProjectHydrator();
+
+        $projectInfos = [];
+        foreach ($projects as $project) {
+            $projectInfo = new ProjectInfo();
+            $projectInfos[] = $projectHydrator->hydrate($project, $projectInfo);
+
+            var_dump($projectInfos);
+            die(__METHOD__ . ' - ' . __LINE__);
+        }
+
+        $this->importProjects($projectInfos);
     }
 
     /**
@@ -439,7 +453,7 @@ class Gerrie
     {
         $this->setTime('start');
 
-        $host = $this->getDataService()->getHost();
+        $host = $this->config[$this->config['DataService']]['Host'];
 
         // Here we go. Lets get the export party started.
         // At first, lets check if the current Gerrit review system is known by the database
@@ -450,6 +464,7 @@ class Gerrie
         $this->proceedProjects($host);
 
         $this->output('');
+        die(__METHOD__ . ' - ' . __LINE__);
         $this->outputHeadline('Export changesets per project');
 
         // Get all projects again and loop over every single project to import them :)
@@ -488,7 +503,7 @@ class Gerrie
     public function proceedChangesetsOfProject($host, array $project)
     {
 
-        $dataService = $this->getDataService();
+        $dataService = $this->getRemoteDataService();
         $dataServiceName = $dataService->getName();
 
         // Clear the temp tables first

@@ -13,7 +13,8 @@ namespace Gerrie\Command;
 use Gerrie\Gerrie;
 use Gerrie\Helper\Configuration;
 use Gerrie\Helper\Database;
-use Gerrie\Helper\Factory;
+use Gerrie\RemoteDataService\RemoteDataServiceFactory;
+
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -78,7 +79,13 @@ class ExportCommand extends Command
         foreach ($gerritSystems as $name => $gerritSystem) {
             $gerritSystem['Name'] = $name;
 
-            $dataService = Factory::getDataService($this->configuration, $name);
+
+            $dataServiceConfig = $gerritSystem[$gerritSystem['DataService']];
+
+            //$dataService = Factory::getDataService($this->configuration, $name);
+
+            $remoteDataServiceFactory = new RemoteDataServiceFactory();
+            $dataService = $remoteDataServiceFactory->create($gerritSystem['DataService'], $dataServiceConfig);
 
             // Bootstrap the importer
             $gerrit = new Gerrie($this->database, $dataService, $gerritSystem);
