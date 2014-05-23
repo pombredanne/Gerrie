@@ -13,23 +13,70 @@ namespace Gerrie\RemoteConnector;
 use Gerrie\Process\ProcessFactory;
 use Symfony\Component\Process\ProcessUtils;
 
+// TODO class header
 class SSH implements RemoteConnectorInterface
 {
 
+    /**
+     * Process factory
+     *
+     * @var \Gerrie\Process\ProcessFactory
+     */
     protected $processFactory;
 
-    protected $commandParts = array();
+    /**
+     * SSH executable
+     *
+     * @var string
+     */
+    protected $executable;
 
-    protected $arguments = array();
+    /**
+     * Command to execute
+     *
+     * @var string
+     */
+    protected $command;
 
-    protected $executable = '';
-
+    /**
+     * Constructor
+     *
+     * @param string $executable
+     * @param ProcessFactory $processFactory
+     */
     public function __construct($executable, ProcessFactory $processFactory)
     {
         $this->processFactory = $processFactory;
         $this->setExecutable($executable);
     }
 
+    /**
+     * Returns the command
+     *
+     * @return string
+     */
+    public function getCommand()
+    {
+        return $this->command;
+    }
+
+    /**
+     * Sets the command
+     *
+     * @param string $command
+     * @return void
+     */
+    public function setCommand($command)
+    {
+        $this->command = $command;
+    }
+
+    /**
+     * Escapes a argument for SSH
+     *
+     * @param string $argument
+     * @return string
+     */
     public function escapeArgument($argument)
     {
         return ProcessUtils::escapeArgument($argument);
@@ -39,79 +86,28 @@ class SSH implements RemoteConnectorInterface
      * Executes the built command.
      * Returns the output of the command.
      *
-     * @param bool $implodeReturnValue True if the output of the executed command will be imploded. False otherwise
      * @return array|string
      */
-    public function execute($implodeReturnValue = true)
+    public function execute()
     {
-        $data = array();
-        $command = $this->getCommand();
+        $command = $this->getExecutable() . ' ' . $this->getCommand();
 
-        $data = $this->execCommand($command, $data);
-
-        if ($implodeReturnValue === false) {
-            return $data;
-        }
-
-        return implode('', $data);
-    }
-
-    /**
-     * Resets all command specific parts.
-     * This can be used to fire many ssh commands with one ssh object.
-     * Just reset() all the seetings before a new command is setted up.
-     *
-     * @return void
-     */
-    public function reset()
-    {
-        $this->commandParts = array();
-        $this->arguments = array();
-    }
-
-    /**
-     * Prepares and builds the full command.
-     * All properties, like ssh key, port, command and agruments will be considered
-     *
-     * @return string
-     */
-    protected function prepareCommand()
-    {
-        $command = $this->getExecutable() . ' ';
-
-        $command .= implode(' ', $this->getCommandParts()) . ' ';
-        $command .= implode(' ', $this->getArguments());
-        $command .= ' 2>&1';
-
-        return $command;
-    }
-
-
-
-    /**
-     * Wrapped exec()-call.
-     * This makes unit testing possible.
-     *
-     * @param string $command The command to execute
-     * @param array $data Array where the result will be stored
-     * @return array
-     */
-    private function execCommand($command, array $data)
-    {
-var_dump($command);die();
-        exec($command, $data);
+        $process = $this->processFactory->createProcess($command);
+        $process->run();
+        $data = $process->getOutput();
 
         return $data;
     }
 
     /**
-     * Returns the full command, which will be executed.
+     * Resets all command specific parts.
+     * This can be used to fire many ssh commands with one ssh object.
      *
-     * @return string
+     * @return void
      */
-    private function getCommand()
+    public function reset()
     {
-        return $this->prepareCommand();
+        $this->setCommand('');
     }
 
     /**
@@ -138,66 +134,5 @@ var_dump($command);die();
     private function getExecutable()
     {
         return $this->executable;
-    }
-
-    /**
-     * Gets all command parts
-     *
-     * @see $this->addCommandPart()
-     *
-     * @return array
-     */
-    private function getCommandParts()
-    {
-        return $this->commandParts;
-    }
-
-    /**
-     * Adds a command part to the command.
-     *
-     * e.g.
-     *        Command: ./console gerrie:export
-     *                 => "gerrie:export" is a command part
-     *
-     *        Command: git merge
-     *                 => "merge" is a command part
-     *
-     * @param string $commandPart The command part
-     * @return void
-     */
-    private function addCommandPart($commandPart)
-    {
-        $this->commandParts[] = ($commandPart);
-    }
-
-    /**
-     * Gets all command arguments
-     *
-     * @see $this->addArgument()
-     *
-     * @return array
-     */
-    private function getArguments()
-    {
-        return $this->arguments;
-    }
-
-    /**
-     * Adds a new argument to the SSH command.
-     *
-     * e.g.
-     *        --help       => $argument = '--help', $value = '', $glue = ''
-     *        --foo=bar    => $argument = '--foo', $value = 'bar', $glue = '='
-     *        --foo bar    => $argument = '--foo', $value = 'bar', $glue = ''
-     *
-     * @param string $argument Name of argument
-     * @param string $value Value of argument
-     * @param string $glue Concat value of $argument and $value
-     * @return void
-     */
-    private function addArgument($argument, $value, $glue)
-    {
-        $escapedValue = (($value) ? escapeshellarg($value) : '');
-        $this->arguments[] = $argument . $glue . $escapedValue;
     }
 }

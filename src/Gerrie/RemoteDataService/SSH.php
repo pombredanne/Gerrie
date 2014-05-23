@@ -12,6 +12,7 @@ namespace Gerrie\RemoteDataService;
 
 use Gerrie\RemoteConnector\RemoteConnectorInterface;
 
+// TODO class header comment
 class SSH extends AbstractRemoteDataService
 {
 
@@ -46,9 +47,12 @@ class SSH extends AbstractRemoteDataService
     /**
      * Constructor
      *
-     * @param \Gerrie\Helper\SSH $connector
-     * @param array $config
-     * @return \Gerrie\DataService\SSH
+     * @param \Gerrie\RemoteConnector\RemoteConnectorInterface $remoteConnector
+     * @param string $host
+     * @param integer $port
+     * @param string $username
+     * @param string $keyFile
+     * @return \Gerrie\RemoteDataService\SSH
      */
     public function __construct(RemoteConnectorInterface $remoteConnector, $host, $port, $username, $keyFile = '')
     {
@@ -73,68 +77,84 @@ class SSH extends AbstractRemoteDataService
     }
 
     /**
-     * Requests projects at the Gerrit server
+     * Requests projects from the Gerrit server
+     *
+     * The ls-projects command supports a "limit" argument
+     * The default limit from Gerrit is 500.
+     * What happen when the Gerrit system got more then 500 projects?
+     * I don`t see a "resume_sortkey" option here :(
+     * Does anyone know this?
      *
      * @return array|null
      */
     public function getProjects()
     {
-        $connector = $this->getBaseQuery();
+        $remoteConnector = $this->getRemoteConnector();
 
-        $connector->addCommandPart('ls-projects');
-        $connector->addArgument('--format', 'JSON', ' ');
-        $connector->addArgument('--description', '', '');
-        $connector->addArgument('--tree', '', '');
-        $connector->addArgument('--type', 'all', ' ');
-        $connector->addArgument('--all', '', '');
-        // The ls-projects command supports a "limit" argument
-        // The default limit from Gerrit is 500.
-        // What happen when the Gerrit system got more then 500 projects?
-        // I don`t see a "resume_sortkey" option here :(
-        // Does anyone know this?
+        $commandParts = $this->getBaseCommandParts();
+        $commandParts[] = 'ls-projects';
+        $commandParts[] = '--format ' . $remoteConnector->escapeArgument('JSON');
+        $commandParts[] = '--description';
+        $commandParts[] = '--tree';
+        $commandParts[] = '--type ' . $remoteConnector->escapeArgument('all');
+        $commandParts[] = '--all';
 
-        $content = $connector->execute();
+        $command = implode(' ', $commandParts);
+
+        $remoteConnector->reset();
+        $remoteConnector->setCommand($command);
+
+        $content = $remoteConnector->execute();
         $content = $this->transformJsonResponse($content);
 
         return $content;
     }
 
     /**
-     * Gets the base ssh query object for all SSH requests.
+     * Gets the base ssh query array for all SSH requests.
      *
-     * @return \Gerrie\Helper\SSH
+     * @return array
      */
-    protected function getBaseQuery()
+    private function getBaseCommandParts()
     {
-        $connector = $this->getRemoteConnector();
-
-        $connector->reset();
-
-        $connector->addCommandPart($this->getKeyfilePart());
-        $connector->addCommandPart($this->getPortPart());
-
+        // TODO should i escape this via remoteConnector?
         $host = $this->host;
         if (isset($this->username) === true) {
             $host = $this->username . '@' . $host;
         }
-        $connector->addCommandPart($host);
-        $connector->addCommandPart('gerrit');
 
-        return $connector;
+        $commandParts = [
+            $this->getKeyfilePart(),
+            $this->getPortPart(),
+            $host,
+            'gerrit'
+        ];
+
+        return $commandParts;
     }
 
-    protected function getPortPart()
+    /**
+     * Return the command part for ssh port specification
+     *
+     * @return string
+     */
+    private function getPortPart()
     {
         $command = '';
 
         if ($this->port > 0) {
-            $command = '-p ' . $this->port . ' ';
+            $command = '-p ' . $this->port;
         }
 
         return $command;
     }
 
-    protected function getKeyfilePart()
+    /**
+     * Return the command part for ssh key file specification
+     *
+     * @return string
+     */
+    private function getKeyfilePart()
     {
         $command = '';
 
@@ -144,7 +164,7 @@ class SSH extends AbstractRemoteDataService
         // Further more, $keyFile can`t be escaped with escapeshellarg(),
         // because after this the command is not working anymore
         if ($this->keyFile) {
-            $command = '-i ' . $this->keyFile . ' ';
+            $command = '-i ' . $this->keyFile;
         }
 
         return $command;
@@ -160,6 +180,7 @@ class SSH extends AbstractRemoteDataService
      */
     public function getChangesets($projectName, $resumeKey = null)
     {
+        throw new \Exception('NOT IMPLEMENTED ... ' . __METHOD__);
         $connector = $this->getBaseQuery();
 
         $connector->addCommandPart('query');
@@ -172,7 +193,7 @@ class SSH extends AbstractRemoteDataService
         $connector->addArgument('--dependencies', '', '');
         $connector->addArgument('--submit-records', '', '');
         $connector->addArgument('', 'project:' . $projectName, '');
-        $connector->addArgument('limit', $this->getQueryLimit(), ':');
+        $connector->addArgument('limit', 500, ':');
 
         if ($resumeKey) {
             $connector->addArgument('resume_sortkey', $resumeKey, ':');
@@ -180,16 +201,5 @@ class SSH extends AbstractRemoteDataService
 
         $content = $connector->execute(false);
         return $content;
-    }
-
-    /**
-     * Initiales the query limit
-     *
-     * @return int
-     */
-    protected function initQueryLimit()
-    {
-        // @todo implement! Idea: Config OR try to get query limit over HTTP with HTTP dataservice
-        return 500;
     }
 }

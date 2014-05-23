@@ -15,6 +15,7 @@ use Gerrie\RemoteConnector\RemoteConnectorInterface;
 interface RemoteDataServiceInterface
 {
     public function getRemoteConnector();
+
     public function setRemoteConnector(RemoteConnectorInterface $remoteConnector);
 
     /**

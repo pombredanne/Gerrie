@@ -79,10 +79,7 @@ class ExportCommand extends Command
         foreach ($gerritSystems as $name => $gerritSystem) {
             $gerritSystem['Name'] = $name;
 
-
             $dataServiceConfig = $gerritSystem[$gerritSystem['DataService']];
-
-            //$dataService = Factory::getDataService($this->configuration, $name);
 
             $remoteDataServiceFactory = new RemoteDataServiceFactory();
             $dataService = $remoteDataServiceFactory->create($gerritSystem['DataService'], $dataServiceConfig);

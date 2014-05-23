@@ -10,6 +10,8 @@
 
 namespace Gerrie\RemoteConnector;
 
+// TODO class header comment
+// TODO method comments
 interface RemoteConnectorInterface
 {
     public function escapeArgument($argument);
@@ -17,4 +19,8 @@ interface RemoteConnectorInterface
     public function execute();
 
     public function reset();
+
+    public function getCommand();
+
+    public function setCommand($command);
 }

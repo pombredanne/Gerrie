@@ -17,9 +17,9 @@ abstract class AbstractRemoteDataService implements RemoteDataServiceInterface
     /**
      * API connector like HTTP or SSH
      *
-     * @var object
+     * @var RemoteConnectorInterface
      */
-    private $connector = null;
+    private $remoteConnector = null;
 
     /**
      * Sets the API connector
@@ -29,17 +29,17 @@ abstract class AbstractRemoteDataService implements RemoteDataServiceInterface
      */
     public function setRemoteConnector(RemoteConnectorInterface $remoteConnector)
     {
-        $this->connector = $remoteConnector;
+        $this->remoteConnector = $remoteConnector;
     }
 
     /**
      * Returns the API connector
      *
-     * @return \stdClass
+     * @return RemoteConnectorInterface
      */
     public function getRemoteConnector()
     {
-        return $this->connector;
+        return $this->remoteConnector;
     }
 
     /**
