@@ -23,14 +23,24 @@ class ProjectHydrator implements HydratorInterface
      */
     public function hydrate(array $data, $object)
     {
-        /** @var \Gerrie\Entities\ProjectInfo $object */
+         /** @var \Gerrie\Entities\ProjectInfo $object */
         $object->setId($data['id']);
-        $object->setParent($data['parent']);
-        $object->setDescription($data['description']);
-        $object->setState($data['state']);
 
-        // TODO branches
-        // TODO web_links
+        $name = ((isset($data['name'])) ? $data['name']: $data['id']);
+        $object->setName($name);
+
+        $parent = ((isset($data['parent'])) ? $data['parent']: '');
+        $object->setParent($parent);
+
+        $description = ((isset($data['description'])) ? $data['description']: '');
+        $object->setDescription($description);
+
+        $state = ((isset($data['state'])) ? $data['state']: '');
+        $object->setState($state);
+
+        // TODO branches (HTTP)
+        // TODO web_links (HTTP)
+        // TODO kind (SSH)
 
         return $object;
     }

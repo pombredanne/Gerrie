@@ -25,9 +25,9 @@
  */
 namespace Gerrie;
 
-use Gerrie\Entities\ProjectInfo;
 use Gerrie\Helper\Database;
 use Gerrie\Hydrator\ProjectHydrator;
+use Gerrie\Entities\ProjectInfo;
 use Gerrie\RemoteDataService\RemoteDataServiceInterface;
 
 class Gerrie
@@ -429,15 +429,13 @@ class Gerrie
             throw new \Exception('No projects found on "' . $host . '"!', 1363894633);
         }
 
+        // TODO maybe we should decouple the hydrator logic
         $projectHydrator = new ProjectHydrator();
 
         $projectInfos = [];
         foreach ($projects as $project) {
             $projectInfo = new ProjectInfo();
             $projectInfos[] = $projectHydrator->hydrate($project, $projectInfo);
-
-            var_dump($projectInfos);
-            die(__METHOD__ . ' - ' . __LINE__);
         }
 
         $this->importProjects($projectInfos);
@@ -1896,11 +1894,12 @@ class Gerrie
      */
     protected function importProjects(array $projects)
     {
-        $parentMapping = array();
+        $parentMapping = [];
 
         // Loop over projects to proceed every single project
-        foreach ($projects as $name => $info) {
-            $this->importProject($name, $info, $parentMapping);
+        foreach ($projects as $info) {
+            /** @var \Gerrie\Entities\ProjectInfo $info */
+            $this->importProject($info, $parentMapping);
         }
 
         // Correct parent / child relation of projects
@@ -1911,23 +1910,25 @@ class Gerrie
      * Imports a single project.
      * We save name, description and parent project.
      *
-     * @param string $name Project name
-     * @param array $info Project info like description or parent project
+     * @param \Gerrie\Entities\ProjectInfo $project Project info like description or parent project
      * @param array $parentMapping Array where parent / child releation will be saved
      * @return int
      */
-    public function importProject($name, array $info, array &$parentMapping)
+    public function importProject(ProjectInfo $project, array &$parentMapping)
     {
+        $name = $project->getName();
         $this->output('Project "' . $name . '"');
 
+        // TODO this should be replaces by the identifier
         $row = $this->existsGerritProject($name, $this->getServerId());
 
         $projectRow = array(
             'server_id' => $this->getServerId(),
-            'identifier' => ((isset($info['id']) === true) ? $info['id'] : ''),
+            'identifier' => $project->getId(),
             'name' => $name,
-            'description' => ((isset($info['description']) === true) ? $info['description'] : ''),
-            'kind' => ((isset($info['kind']) === true) ? $info['kind'] : '')
+            'description' => $project->getDescription(),
+            // TODO see ProjectHydrator
+            //'kind' => ((isset($project['kind']) === true) ? $project['kind'] : '')
         );
 
         // If we don`t know this project, save this!
@@ -1959,12 +1960,13 @@ class Gerrie
         }
 
         // We have to save the parent / child relations of projects to execute bulk updates afterwards
-        if (isset($info['parent']) === true) {
-            $parentMapping[$info['parent']][] = intval($id);
+        if ($project->getParent()) {
+            $parentMapping[$project->getParent()][] = intval($id);
         }
 
-        $info = $this->unsetKeys($info, array('description', 'parent', 'id', 'kind'));
-        $this->checkIfAllValuesWereProceeded($info, 'Project');
+        // TODO move this to project hydrator
+        //$project = $this->unsetKeys($project, array('description', 'parent', 'id', 'kind'));
+        //$this->checkIfAllValuesWereProceeded($project, 'Project');
 
         return $id;
     }
@@ -1998,7 +2000,7 @@ class Gerrie
             $updatedRows = $this->updateRecords(Database::TABLE_PROJECT, $dataToUpdate, $where);
 
             $this->output(
-                '=> ' . $updatedRows . ' projects updated (with "' . $parentProject['name'] . '" as parent project'
+                '=> ' . $updatedRows . ' projects updated (with "' . $parentProject['name'] . '" as parent project)'
             );
         }
     }
