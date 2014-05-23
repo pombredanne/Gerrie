@@ -22,21 +22,21 @@ class SSH implements RemoteConnectorInterface
      *
      * @var \Gerrie\Process\ProcessFactory
      */
-    protected $processFactory;
+    private $processFactory;
 
     /**
      * SSH executable
      *
      * @var string
      */
-    protected $executable;
+    private $executable;
 
     /**
      * Command to execute
      *
      * @var string
      */
-    protected $command;
+    private $command;
 
     /**
      * Constructor
@@ -86,7 +86,7 @@ class SSH implements RemoteConnectorInterface
      * Executes the built command.
      * Returns the output of the command.
      *
-     * @return array|string
+     * @return string
      */
     public function execute()
     {

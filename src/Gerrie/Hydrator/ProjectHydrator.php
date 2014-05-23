@@ -31,7 +31,7 @@ class ProjectHydrator implements HydratorInterface
 
         // TODO branches
         // TODO web_links
-die(__METHOD__);
+
         return $object;
     }
 }

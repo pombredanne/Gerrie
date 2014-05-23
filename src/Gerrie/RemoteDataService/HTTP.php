@@ -40,9 +40,11 @@ class HTTP extends AbstractRemoteDataService
     /**
      * Constructor
      *
-     * @param \Buzz\Browser $connector
-     * @param array $config
-     * @return \Gerrie\DataService\HTTP
+     * @param \Gerrie\RemoteConnector\RemoteConnectorInterface $remoteConnector
+     * @param string $host
+     * @param string $username
+     * @param string $password
+     * @return \Gerrie\RemoteDataService\HTTP
      */
     public function __construct(RemoteConnectorInterface $remoteConnector, $host, $username = '', $password = '')
     {
@@ -53,12 +55,23 @@ class HTTP extends AbstractRemoteDataService
         $this->password = $password;
     }
 
+    /**
+     * Sets the HTTP host
+     *
+     * @param string $host
+     * @return void
+     */
     private function setHost($host)
     {
         $host = rtrim($host, '/') . '/';
         $this->host = $host;
     }
 
+    /**
+     * Return the HTTP host
+     *
+     * @return string
+     */
     private function getHost()
     {
         return $this->host;
@@ -70,7 +83,7 @@ class HTTP extends AbstractRemoteDataService
      * @param bool $withAuthentication If true, the authentification string will be appended. False otherwise
      * @return string
      */
-    protected function getBaseUrl($withAuthentication = false)
+    private function getBaseUrl($withAuthentication = false)
     {
         $baseUrl = $this->getHost();
 
@@ -82,31 +95,13 @@ class HTTP extends AbstractRemoteDataService
     }
 
     /**
-     * Verifies the last request.
-     * If the last request was not successful, it will be throw an exception.
-     *
-     * @param \Buzz\Message\Response $response The response object from the last reques
-     * @param string $url The url which was requested
-     * @return \Buzz\Message\Response
-     * @throws \Exception
-     */
-    protected function verifyResult(\Buzz\Message\Response $response, $url)
-    {
-        if ($response->getStatusCode() !== 200) {
-            throw new \Exception('Request to "' . $url . '" failed', 1364061673);
-        }
-
-        return $response;
-    }
-
-    /**
      * Transforms a JSON string into an array.
      * Regular, the json is the content from the response.
      *
      * @param string $json The json string
      * @return array|null
      */
-    public function transformJsonResponse($json)
+    private function transformJsonResponse($json)
     {
         // In a REST-API call, the first five chars are )]}'\n
         // to decode it, we have to strip it
@@ -123,8 +118,9 @@ class HTTP extends AbstractRemoteDataService
      *
      * @return int
      */
-    protected function initQueryLimit()
+    private function initQueryLimit()
     {
+        throw new \Exception('NOT IMPLEMENT ... ' . __METHOD__);
         $url = $this->getBaseUrl(true) . 'accounts/self/capabilities?format=JSON';
         $response = $this->getRemoteConnector()->get($url);
         $response = $this->verifyResult($response, $url);
@@ -135,7 +131,7 @@ class HTTP extends AbstractRemoteDataService
     }
 
     /**
-     * Requests projects at the Gerrit server
+     * Requests projects from the Gerrit server
      *
      * @return array|null
      */
@@ -150,10 +146,13 @@ class HTTP extends AbstractRemoteDataService
         );
 
         $url = $this->getBaseUrl() . 'projects/?' . http_build_query($urlParts);
-        $response = $this->getRemoteConnector()->get($url);
-        $response = $this->verifyResult($response, $url);
 
-        $content = $this->transformJsonResponse($response->getContent());
+        $remoteConnector = $this->getRemoteConnector();
+        $remoteConnector->reset();
+        $remoteConnector->setCommand($url);
+        $response = $remoteConnector->execute();
+
+        $content = $this->transformJsonResponse($response);
 
         return $content;
     }
@@ -231,6 +230,7 @@ class HTTP extends AbstractRemoteDataService
      */
     private function buildQueryStringWithSameParameterName($parameterName, array $values)
     {
+        throw new \Exception('NOT IMPLEMENT ... ' . __METHOD__);
         $queryString = '';
 
         foreach ($values as $value) {
