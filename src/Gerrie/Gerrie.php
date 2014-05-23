@@ -57,7 +57,7 @@ class Gerrie
     /**
      * Storage for data services.
      *
-     * @var \Gerrie\DataService\Base
+     * @var \Gerrie\RemoteDataService\RemoteDataServiceInterface
      */
     protected $remoteDataService = null;
 
@@ -127,9 +127,9 @@ class Gerrie
      * Constructor
      *
      * @param \Gerrie\Helper\Database $database The database helper object
-     * @param \Gerrie\DataService\Base $dataService The data service object
+     * @param \Gerrie\RemoteDataService\RemoteDataServiceInterface $dataService The data service object
      * @param array $config The configuration array
-     * @return void
+     * @return \Gerrie\Gerrie
      */
     public function __construct(Database $database, RemoteDataServiceInterface $dataService, array $config)
     {
@@ -192,7 +192,7 @@ class Gerrie
     /**
      * Gets a data service
      *
-     * @return \Gerrie\DataService\Base
+     * @return \Gerrie\RemoteDataService\RemoteDataServiceInterface
      */
     public function getRemoteDataService()
     {
