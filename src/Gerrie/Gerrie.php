@@ -447,7 +447,7 @@ class Gerrie
      *
      * @return bool
      */
-    public function export()
+    public function crawl()
     {
         $this->setTime('start');
 
