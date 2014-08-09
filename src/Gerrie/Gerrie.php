@@ -686,7 +686,7 @@ class Gerrie
                     'system' => $system,
                     'number' => $trackingId['id']
                 );
-                $this->insertRecord(Database::TABLE_TRACKING_ID, $trackingRow);
+                $this->getDatabase()->insertRecord(Database::TABLE_TRACKING_ID, $trackingRow);
 
                 // We know this tracking id, but this id was set to referenced_earlier => 1 earlier.
                 // So lets reactivate this!
@@ -748,7 +748,7 @@ class Gerrie
 
         // If there is no branch with the current branch name, insert it
         if ($row === false) {
-            $idValue = $this->insertRecord($table, array($compareField => $compareValue));
+            $idValue = $this->getDatabase()->insertRecord($table, array($compareField => $compareValue));
 
         } else {
             $idValue = $row[$idField];
@@ -810,7 +810,7 @@ class Gerrie
             $changeSet['createdOn']
         );
         if ($changeSetRow === false) {
-            $changeSet['id'] = $this->insertRecord(Database::TABLE_CHANGESET, $changeSetData);
+            $changeSet['id'] = $this->getDatabase()->insertRecord(Database::TABLE_CHANGESET, $changeSetData);
 
             $this->output('=> Inserted (ID: ' . $changeSet['id'] . ')');
 
@@ -932,7 +932,7 @@ class Gerrie
             $wherePart = array('changeset' => $changeSet['id']);
             $submitRecordRow = $this->getLookupTableValues(Database::TABLE_SUBMIT_RECORDS, array('id'), $wherePart);
             if ($submitRecordRow === false) {
-                $id = $this->insertRecord(Database::TABLE_SUBMIT_RECORDS, $submitRecordData);
+                $id = $this->getDatabase()->insertRecord(Database::TABLE_SUBMIT_RECORDS, $submitRecordData);
 
             } else {
                 $id = $submitRecordRow['id'];
@@ -975,7 +975,7 @@ class Gerrie
                 'by' => $by['id']
             );
             if ($submitRecordLabelRow === false) {
-                $this->insertRecord(Database::TABLE_SUBMIT_RECORD_LABELS, $submitRecordLabel);
+                $this->getDatabase()->insertRecord(Database::TABLE_SUBMIT_RECORD_LABELS, $submitRecordLabel);
 
             } else {
                 $this->updateRecord(
@@ -1024,7 +1024,7 @@ class Gerrie
                     'ref' => $neededBy['ref'],
                     'status' => Database::TMP_DEPENDS_NEEDED_STATUS_NEEDEDBY
                 );
-                $this->insertRecord(Database::TABLE_TMP_DEPENDS_NEEDED, $neededByData);
+                $this->getDatabase()->insertRecord(Database::TABLE_TMP_DEPENDS_NEEDED, $neededByData);
 
                 $neededBy = $this->unsetKeys($neededBy, $keysToUnset);
                 $this->checkIfAllValuesWereProceeded($neededBy, 'neededBy');
@@ -1048,7 +1048,7 @@ class Gerrie
                     'is_current_patchset' => (int) $dependsOn['isCurrentPatchSet'],
                     'status' => Database::TMP_DEPENDS_NEEDED_STATUS_DEPENDSON
                 );
-                $this->insertRecord(Database::TABLE_TMP_DEPENDS_NEEDED, $dependsOnData);
+                $this->getDatabase()->insertRecord(Database::TABLE_TMP_DEPENDS_NEEDED, $dependsOnData);
 
                 $dependsOn = $this->unsetKeys($dependsOn, $keysToUnset);
                 $this->checkIfAllValuesWereProceeded($dependsOn, 'dependsOn');
@@ -1131,7 +1131,7 @@ class Gerrie
                 'message' => $comment['message'],
                 'number' => $key
             );
-            $this->insertRecord(Database::TABLE_COMMENT, $commentData);
+            $this->getDatabase()->insertRecord(Database::TABLE_COMMENT, $commentData);
 
             $comment = $this->unsetKeys($comment, array('timestamp', 'reviewer', 'message'));
             $this->checkIfAllValuesWereProceeded($comment, 'Comment');
@@ -1181,7 +1181,7 @@ class Gerrie
                 'is_draft' => ((isset($patchset['isDraft']) === true) ? (int) $patchset['isDraft']: 0),
                 'created_on' => $patchset['createdOn'],
             );
-            $patchset['id'] = $this->insertRecord(Database::TABLE_PATCHSET, $patchSetData);
+            $patchset['id'] = $this->getDatabase()->insertRecord(Database::TABLE_PATCHSET, $patchSetData);
 
             // Import files per patchset
             $this->proceedFiles($patchset);
@@ -1302,7 +1302,7 @@ class Gerrie
                 $commentRow['message_crc32']
             );
             if ($fileCommentRow === false) {
-                $this->insertRecord(Database::TABLE_FILE_COMMENTS, $commentRow);
+                $this->getDatabase()->insertRecord(Database::TABLE_FILE_COMMENTS, $commentRow);
             }
 
             // Normally we would update the comment here (in a else part).
@@ -1371,7 +1371,7 @@ class Gerrie
                 'deletions' => $file['deletions'],
                 'type' => $type
             );
-            $this->insertRecord(Database::TABLE_FILES, $fileData);
+            $this->getDatabase()->insertRecord(Database::TABLE_FILES, $fileData);
 
             $file = $this->unsetKeys($file, array('file', 'fileOld', 'type', 'insertions', 'deletions'));
             $this->checkIfAllValuesWereProceeded($file, 'File');
@@ -1404,7 +1404,7 @@ class Gerrie
         // Is this approval already in database?
         $approvalRow = $this->getGerritApprovalByIdentifier($patchset['id'], $approval['type'], $by['id']);
         if ($approvalRow === false) {
-            $this->insertRecord(Database::TABLE_APPROVAL, $approvalData);
+            $this->getDatabase()->insertRecord(Database::TABLE_APPROVAL, $approvalData);
 
             // We know this approval. Just update it!
         } else {
@@ -1474,13 +1474,13 @@ class Gerrie
                     'name' => $person['name'],
                     'username' => $person['username']
                 );
-                $person['id'] = $this->insertRecord(Database::TABLE_PERSON, $personData);
+                $person['id'] = $this->getDatabase()->insertRecord(Database::TABLE_PERSON, $personData);
 
                 $emailData = array(
                     'person' => $person['id'],
                     'email' => $email
                 );
-                $this->insertRecord(Database::TABLE_EMAIL, $emailData);
+                $this->getDatabase()->insertRecord(Database::TABLE_EMAIL, $emailData);
 
                 // Person exists, but has a new e-mail. Just add the e-mail-address to this person
             } else {
@@ -1489,7 +1489,7 @@ class Gerrie
                     'person' => $personByName['id'],
                     'email' => $email
                 );
-                $this->insertRecord(Database::TABLE_EMAIL, $emailData);
+                $this->getDatabase()->insertRecord(Database::TABLE_EMAIL, $emailData);
             }
         } else {
             $person['id'] = $emailPerson['id'];
@@ -1867,7 +1867,7 @@ class Gerrie
                 'name' => $name,
                 'host' => $host
             );
-            $serverId = $this->insertRecord(Database::TABLE_SERVER, $serverData);
+            $serverId = $this->getDatabase()->insertRecord(Database::TABLE_SERVER, $serverData);
             $this->setServersFirstRun();
 
             $this->output('=> Inserted (ID: ' . $serverId . ')');
@@ -1964,7 +1964,7 @@ class Gerrie
         // If we don`t know this project, save this!
         if ($row === false) {
             $projectRow['parent'] = 0;
-            $id = $this->insertRecord(Database::TABLE_PROJECT, $projectRow);
+            $id = $this->getDatabase()->insertRecord(Database::TABLE_PROJECT, $projectRow);
 
             $this->output('=> Inserted (ID: ' . $id . ')');
 
@@ -2033,46 +2033,6 @@ class Gerrie
                 '=> ' . $updatedRows . ' projects updated (with "' . $parentProject['name'] . '" as parent project)'
             );
         }
-    }
-
-    /**
-     * Inserts a single record (given $data) in the given $table via prepared statements.
-     *
-     * @param string $table Table to insert
-     * @param array $data Data to insert
-     * @throws \Exception
-     * @return int Last inserted id
-     */
-    protected function insertRecord($table, array $data)
-    {
-        $dbHandle = $this->getDatabase()->getDatabaseConnection();
-
-        $fieldSet = array_keys($data);
-
-        // Prepare sets
-        $valueSet = array();
-        foreach ($data as $key => $value) {
-            $valueSet[':' . $key] = $value;
-        }
-
-        if (count($fieldSet) == 0 || count($valueSet) == 0) {
-            throw new \Exception('Missing data for insert query', 1363894664);
-        }
-
-        $fieldSet[] = 'tstamp';
-        $valueSet[':tstamp'] = time();
-
-        $fieldSet[] = 'crdate';
-        $valueSet[':crdate'] = time();
-
-        $query = 'INSERT INTO ' . $table . ' (`' . implode('`,`', $fieldSet) . '`)
-                  VALUES (' . implode(', ', array_keys($valueSet)) . ')';
-
-        $statement = $dbHandle->prepare($query);
-        $executeResult = $statement->execute($valueSet);
-
-        $this->database->checkQueryError($statement, $executeResult);
-        return $dbHandle->lastInsertId();
     }
 
     /**

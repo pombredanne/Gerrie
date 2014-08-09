@@ -338,4 +338,44 @@ class Database
         $errorInfo = $statement->errorInfo();
         throw new \Exception($errorInfo[2] . ' (' . $errorInfo[1] . ')', 1367873943);
     }
+
+    /**
+     * Inserts a single record (given $data) in the given $table via prepared statements.
+     *
+     * @param string $table Table to insert
+     * @param array $data Data to insert
+     * @throws \Exception
+     * @return int Last inserted id
+     */
+    public function insertRecord($table, array $data)
+    {
+        $dbHandle = $this->getDatabaseConnection();
+
+        $fieldSet = array_keys($data);
+
+        // Prepare sets
+        $valueSet = array();
+        foreach ($data as $key => $value) {
+            $valueSet[':' . $key] = $value;
+        }
+
+        if (count($fieldSet) == 0 || count($valueSet) == 0) {
+            throw new \Exception('Missing data for insert query', 1363894664);
+        }
+
+        $fieldSet[] = 'tstamp';
+        $valueSet[':tstamp'] = time();
+
+        $fieldSet[] = 'crdate';
+        $valueSet[':crdate'] = time();
+
+        $query = 'INSERT INTO ' . $table . ' (`' . implode('`,`', $fieldSet) . '`)
+                  VALUES (' . implode(', ', array_keys($valueSet)) . ')';
+
+        $statement = $dbHandle->prepare($query);
+        $executeResult = $statement->execute($valueSet);
+
+        $this->checkQueryError($statement, $executeResult);
+        return $dbHandle->lastInsertId();
+    }
 }
