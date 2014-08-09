@@ -672,7 +672,7 @@ class Gerrie
             'referenced_earlier' => 1
         );
         $where = 'changeset = ' . intval($changeSetId);
-        $this->updateRecords(Database::TABLE_TRACKING_ID, $dataToUpdate, $where);
+        $this->getDatabase()->updateRecords(Database::TABLE_TRACKING_ID, $dataToUpdate, $where);
 
         foreach ($trackingIds as $trackingId) {
             $system = $this->proceedLookupTable(Database::TABLE_TRACKING_SYSTEM, 'id', 'name', $trackingId['system']);
@@ -1218,7 +1218,7 @@ class Gerrie
         // we store approvals which are not active anymore
         $updateData = array('voted_earlier' => 1);
         $where = '`patchset` = ' . intval($patchset['id']);
-        $this->updateRecords(Database::TABLE_APPROVAL, $updateData, $where);
+        $this->getDatabase()->updateRecords(Database::TABLE_APPROVAL, $updateData, $where);
 
         // Sometimes a patchset does not get any approval.
         // In this case, the approvals key does not exist and we can skip it.
@@ -2027,69 +2027,12 @@ class Gerrie
             // If anyone has an idea, please let me know.
             $where = 'FIND_IN_SET(`id`, \'' . implode(',', $parentMapping[$parentProject['name']]) . '\') > 0 ';
             $where .= 'AND  parent != ' . $dataToUpdate['parent'];
-            $updatedRows = $this->updateRecords(Database::TABLE_PROJECT, $dataToUpdate, $where);
+            $updatedRows = $this->getDatabase()->updateRecords(Database::TABLE_PROJECT, $dataToUpdate, $where);
 
             $this->output(
                 '=> ' . $updatedRows . ' projects updated (with "' . $parentProject['name'] . '" as parent project)'
             );
         }
-    }
-
-    /**
-     * Updates all records which matches the $where statement in the given $table with the given $data via prepared statements.
-     *
-     * @param string $table Table to update
-     * @param array $data New data
-     * @param string $where Where statement
-     * @return int
-     */
-    protected function updateRecords($table, array $data, $where)
-    {
-        $dbHandle = $this->getDatabase()->getDatabaseConnection();
-        list($updateSet, $prepareSet) = $this->prepareUpdateData($data);
-
-        $query = 'UPDATE ' . $table . '
-                  SET ' . implode(', ', $updateSet) . '
-                  WHERE ' . $where;
-
-        $statement = $dbHandle->prepare($query);
-        $executeResult = $statement->execute($prepareSet);
-
-        $this->database->checkQueryError($statement, $executeResult);
-        return $statement->rowCount();
-    }
-
-    /**
-     * Prepared the needed data / structures for prepared statements for our UPDATE queries.
-     *
-     * After this we get two structures:
-     * 1. ($updateSet): array(0 => 'MySQLfield1 = :MySQLfield1', 1 => 'MySQLfield2 = :MySQLfield2', ...);
-     * 2. ($prepareSet): array(':MySQLfield1' => 'valueToUpdate1', ':MySQLfield2' => 'valueToUpdate1', ...);
-     *
-     * @see $this->updateRecord
-     * @see $this->updateRecords
-     *
-     * @param array $data Data to update with fields as keys and related values as values
-     * @return array
-     * @throws \Exception
-     */
-    protected function prepareUpdateData(array $data)
-    {
-        $updateSet = array();
-        $prepareSet = array();
-        foreach ($data as $key => $value) {
-            $updateSet[] = '`' . $key . '` = :' . $key;
-            $prepareSet[':' . $key] = $value;
-        }
-
-        if (count($updateSet) == 0 || count($prepareSet) == 0) {
-            throw new \Exception('Missing data for update query', 1363894675);
-        }
-
-        $updateSet[] = '`tstamp` = :tstamp';
-        $prepareSet[':tstamp'] = time();
-
-        return array($updateSet, $prepareSet);
     }
 
     /**

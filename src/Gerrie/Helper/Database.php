@@ -404,4 +404,61 @@ class Database
         $this->checkQueryError($statement, $executeResult);
         return $statement->rowCount();
     }
+
+    /**
+     * Updates all records which matches the $where statement in the given $table with the given $data via prepared statements.
+     *
+     * @param string $table Table to update
+     * @param array $data New data
+     * @param string $where Where statement
+     * @return int
+     */
+    public function updateRecords($table, array $data, $where)
+    {
+        $dbHandle = $this->getDatabaseConnection();
+        list($updateSet, $prepareSet) = $this->prepareUpdateData($data);
+
+        $query = 'UPDATE ' . $table . '
+                  SET ' . implode(', ', $updateSet) . '
+                  WHERE ' . $where;
+
+        $statement = $dbHandle->prepare($query);
+        $executeResult = $statement->execute($prepareSet);
+
+        $this->checkQueryError($statement, $executeResult);
+        return $statement->rowCount();
+    }
+
+    /**
+     * Prepared the needed data / structures for prepared statements for our UPDATE queries.
+     *
+     * After this we get two structures:
+     * 1. ($updateSet): array(0 => 'MySQLfield1 = :MySQLfield1', 1 => 'MySQLfield2 = :MySQLfield2', ...);
+     * 2. ($prepareSet): array(':MySQLfield1' => 'valueToUpdate1', ':MySQLfield2' => 'valueToUpdate1', ...);
+     *
+     * @see $this->updateRecord
+     * @see $this->updateRecords
+     *
+     * @param array $data Data to update with fields as keys and related values as values
+     * @return array
+     * @throws \Exception
+     */
+    protected function prepareUpdateData(array $data)
+    {
+        $updateSet = array();
+        $prepareSet = array();
+        foreach ($data as $key => $value) {
+            $updateSet[] = '`' . $key . '` = :' . $key;
+            $prepareSet[':' . $key] = $value;
+        }
+
+        if (count($updateSet) == 0 || count($prepareSet) == 0) {
+            throw new \Exception('Missing data for update query', 1363894675);
+        }
+
+        $updateSet[] = '`tstamp` = :tstamp';
+        $prepareSet[':tstamp'] = time();
+
+        return array($updateSet, $prepareSet);
+    }
 }
