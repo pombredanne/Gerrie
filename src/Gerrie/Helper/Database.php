@@ -378,4 +378,30 @@ class Database
         $this->checkQueryError($statement, $executeResult);
         return $dbHandle->lastInsertId();
     }
+
+    /**
+     * Updates a single record (given $id) in the given $table with the given $data via prepared statements.
+     *
+     * @param string $table Table to update
+     * @param array $data New data
+     * @param int $id ID of record to update
+     * @return int
+     */
+    public function updateRecord($table, array $data, $id)
+    {
+        $dbHandle = $this->getDatabaseConnection();
+        list($updateSet, $prepareSet) = $this->prepareUpdateData($data);
+
+        $prepareSet[':id'] = $id;
+
+        $query = 'UPDATE ' . $table . '
+                  SET ' . implode(', ', $updateSet) . '
+                  WHERE `id` = :id';
+
+        $statement = $dbHandle->prepare($query);
+        $executeResult = $statement->execute($prepareSet);
+
+        $this->checkQueryError($statement, $executeResult);
+        return $statement->rowCount();
+    }
 }

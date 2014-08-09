@@ -694,7 +694,7 @@ class Gerrie
                 $dataToUpdate = array(
                     'referenced_earlier' => 0
                 );
-                $this->updateRecord(Database::TABLE_TRACKING_ID, $dataToUpdate, $trackingIdRow['id']);
+                $this->getDatabase()->updateRecord(Database::TABLE_TRACKING_ID, $dataToUpdate, $trackingIdRow['id']);
             }
 
             $trackingId = $this->unsetKeys($trackingId, array('id', 'system'));
@@ -826,7 +826,7 @@ class Gerrie
             // Calculate the difference and update it :)
             $changeSet['id'] = $changeSetRow['id'];
             $dataDiff = array_diff($changeSetData, $changeSetRow);
-            $this->updateRecord(Database::TABLE_CHANGESET, $dataDiff, $changeSet['id']);
+            $this->getDatabase()->updateRecord(Database::TABLE_CHANGESET, $dataDiff, $changeSet['id']);
 
             $this->output('=> Updated (ID: ' . $changeSet['id'] . ')');
 
@@ -936,7 +936,7 @@ class Gerrie
 
             } else {
                 $id = $submitRecordRow['id'];
-                $this->updateRecord(Database::TABLE_SUBMIT_RECORDS, $submitRecordData, $submitRecordRow['id']);
+                $this->getDatabase()->updateRecord(Database::TABLE_SUBMIT_RECORDS, $submitRecordData, $submitRecordRow['id']);
             }
 
             $submitRecord = $this->unsetKeys($submitRecord, array('status'));
@@ -978,7 +978,7 @@ class Gerrie
                 $this->getDatabase()->insertRecord(Database::TABLE_SUBMIT_RECORD_LABELS, $submitRecordLabel);
 
             } else {
-                $this->updateRecord(
+                $this->getDatabase()->updateRecord(
                     Database::TABLE_SUBMIT_RECORD_LABELS,
                     $submitRecordLabelRow,
                     $submitRecordLabelRow['id']
@@ -1078,7 +1078,7 @@ class Gerrie
         // If the current currentPatchSet in database not equal the patchset from Gerrit, update it
         if ($patchSetRow['id'] != $currentPatchSetId) {
             $updateData = array('current_patchset' => $patchSetRow['id']);
-            $this->updateRecord(Database::TABLE_CHANGESET, $updateData, $changeSet['id']);
+            $this->getDatabase()->updateRecord(Database::TABLE_CHANGESET, $updateData, $changeSet['id']);
         }
     }
 
@@ -1410,7 +1410,7 @@ class Gerrie
         } else {
             $this->checkIfServersFirstRun('Approval', 1363897318, array($approval, $approvalRow));
 
-            $this->updateRecord(Database::TABLE_APPROVAL, $approvalData, $approvalRow['id']);
+            $this->getDatabase()->updateRecord(Database::TABLE_APPROVAL, $approvalData, $approvalRow['id']);
         }
 
         $approval = $this->unsetKeys($approval, array('type', 'description', 'value', 'grantedOn', 'by'));
@@ -1980,7 +1980,7 @@ class Gerrie
 
             // If there some new data for us, update it.
             if (count($diff) > 0) {
-                $this->updateRecord(Database::TABLE_PROJECT, $diff, $id);
+                $this->getDatabase()->updateRecord(Database::TABLE_PROJECT, $diff, $id);
 
                 $this->output('=> Updated (ID: ' . $id . ')');
 
@@ -2033,32 +2033,6 @@ class Gerrie
                 '=> ' . $updatedRows . ' projects updated (with "' . $parentProject['name'] . '" as parent project)'
             );
         }
-    }
-
-    /**
-     * Updates a single record (given $id) in the given $table with the given $data via prepared statements.
-     *
-     * @param string $table Table to update
-     * @param array $data New data
-     * @param int $id ID of record to update
-     * @return int
-     */
-    protected function updateRecord($table, array $data, $id)
-    {
-        $dbHandle = $this->getDatabase()->getDatabaseConnection();
-        list($updateSet, $prepareSet) = $this->prepareUpdateData($data);
-
-        $prepareSet[':id'] = $id;
-
-        $query = 'UPDATE ' . $table . '
-                  SET ' . implode(', ', $updateSet) . '
-                  WHERE `id` = :id';
-
-        $statement = $dbHandle->prepare($query);
-        $executeResult = $statement->execute($prepareSet);
-
-        $this->database->checkQueryError($statement, $executeResult);
-        return $statement->rowCount();
     }
 
     /**
