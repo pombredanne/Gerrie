@@ -26,6 +26,8 @@
 namespace Gerrie;
 
 use Gerrie\Helper\Database;
+use Gerrie\Importer\ServerImporter;
+use Gerrie\Transformer\ServerTransformer;
 
 class Gerrie
 {
@@ -441,9 +443,18 @@ class Gerrie
 
         $host = $this->getDataService()->getHost();
 
-        // Here we go. Lets get the export party started.
+        // Here we go. Lets get the import party started.
         // At first, lets check if the current Gerrit review system is known by the database
-        $this->proceedServer($this->config['Name'], $host);
+        $server = [
+            'name' => $this->config['Name'],
+            'host' => $host
+        ];
+        $serverTransformer = new ServerTransformer();
+        $serverEntity = $serverTransformer->transform($server);
+
+        $serverImporter = new ServerImporter($this->getDatabase(), $this->getOutput());
+        $serverId = $serverImporter->import($serverEntity);
+        $this->setServerId($serverId);
 
         // After this, lets start to save all projects.
         // We need the projects first, because this is our "entry point" for the data mining.
@@ -1868,44 +1879,6 @@ class Gerrie
         return $statement->fetch(\PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Checks if the given Gerrit server is known by the database.
-     * If the don`t know this host, we save this to the database.
-     *
-     * @param string $name Configured name of Gerrit server
-     * @param string $host Host of Gerrit Server
-     * @return integer
-     */
-    public function proceedServer($name, $host)
-    {
-        $this->outputHeadline('Proceed Server');
-        $this->output('Server "' . $name . '" (' . $host . ')');
-
-        $serverId = $this->existsGerritServer($name, $host);
-
-        // If the don`t know this server, save it!
-        if ($serverId === false) {
-
-            $serverData = array(
-                'name' => $name,
-                'host' => $host
-            );
-            $serverId = $this->insertRecord(Database::TABLE_SERVER, $serverData);
-            $this->setServersFirstRun();
-
-            $this->output('=> Inserted (ID: ' . $serverId . ')');
-
-        } else {
-            $this->output('=> Exists');
-        }
-
-        $this->output('');
-
-        $this->setServerId($serverId);
-
-        return $serverId;
-    }
-
     protected function outputHeadline($message)
     {
         $this->output('#');
@@ -2058,6 +2031,8 @@ class Gerrie
     /**
      * Inserts a single record (given $data) in the given $table via prepared statements.
      *
+     * TODO Remove this if we splitted everything into importers
+     *
      * @param string $table Table to insert
      * @param array $data Data to insert
      * @throws \Exception
@@ -2191,34 +2166,6 @@ class Gerrie
         }
 
         return json_decode($json, true);
-    }
-
-    /**
-     * Checks if a Gerrit server is known by our database.
-     *
-     * @param string $name Name of configured Gerrit server
-     * @param string $host Host of configured Gerrit server
-     * @return string
-     */
-    protected function existsGerritServer($name, $host)
-    {
-        $dbHandle = $this->getDatabase()->getDatabaseConnection();
-
-        $query = 'SELECT `id`
-                  FROM ' . Database::TABLE_SERVER . '
-                  WHERE `name` = :name AND `host` = :host LIMIT 1';
-
-
-        $values = array(
-            ':name' => $name,
-            ':host' => $host
-        );
-
-        $statement = $dbHandle->prepare($query);
-        $executeResult = $statement->execute($values);
-
-        $statement = $this->database->checkQueryError($statement, $executeResult, $values);
-        return $statement->fetchColumn();
     }
 
     /**
