@@ -57,8 +57,27 @@ abstract class BaseImporter implements ImporterInterface
      * @param string $message
      * @return void
      */
-    protected function log($message)
+    protected function log($message, $type = 1)
     {
-        $this->logger->writeln($message);
+        // Chose color type of message
+        switch ($type) {
+            case 2:
+                $prefix = '<comment>';
+                $postfix = '</comment>';
+                break;
+
+            case 3:
+                $prefix = '<error>';
+                $postfix = '</error>';
+                break;
+
+            case 1:
+            default:
+                $prefix = '<info>';
+                $postfix = '</info>';
+                break;
+        }
+
+        $this->logger->writeln($prefix . $message . $postfix);
     }
 }
